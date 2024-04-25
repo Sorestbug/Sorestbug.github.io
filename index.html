@@ -1,0 +1,153 @@
+<!--
+	 --------------------------------
+	|   INFORMACIÓN  DEL  PROYECTO   |
+	 --------------------------------
+     v0.8
+
+	Autores:		+ <202083432> - <Gordillo Santos Fernando>
+					+ <202068295> - <Hernández Flores Juan Pablo>
+
+	Propósito:		1. Importar modelos y animaciones 3D creados en Blender
+					2. Programar una aplicación Web interactiva
+					3. Permitir al usuario interactuar con modelos y animaciones
+--> 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu Principal</title>
+    <style>
+        body {
+            /* Establecer imagen de fondo */
+            background-image: url('Recursos/Imagenes/FondoV7.jpg');
+            background-size: cover;
+            background-repeat: no-repeat; 
+            /*background-position: center;*/
+            color: white;
+            position: absolute;
+        }
+
+        #reproductor {
+            position: absolute;
+            top: 550px; 
+            left: 750px;
+        }
+
+        #Logo {
+            position: absolute; 
+            top: -250px; 
+            left: -300px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(0.3);
+        }
+
+        #Face {
+            position: absolute; 
+            top: 50px; 
+            left: 100px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(1.3);
+        }
+
+        #ChikoritaButton {
+            position: absolute; 
+            top: -410px; 
+            left: -420px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.08);
+        }
+        #ChikoritaButton:hover {
+            transform: scale(.1); 
+        }
+
+        #JugarButton {
+            position: absolute; 
+            top: 100px; 
+            left: 230px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #JugarButton:hover {
+            transform: scale(.4); 
+        }
+
+        #ControlesButton {
+            position: absolute; 
+            top: 240px; 
+            left: 230px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #ControlesButton:hover {
+            transform: scale(.4); 
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Reproductor de música -->
+    <audio id="reproductor"  autoplay loop>
+        <source src="Recursos/Musica/AllPowerRangers.mp3" type="audio/mpeg">
+        Tu navegador no soporta la reproducción de audio.
+    </audio>
+
+    <audio id="gritoChikorita" src="Recursos/Musica/Grito_de_Chikorita.ogg" preload="auto"></audio>
+    <audio id="boton1" src="Recursos/Musica/Boton1.wav" preload="auto"></audio>
+
+    <!--PNGs -->
+    <img id="ChikoritaButton" src="Recursos/Imagenes/TeamChikorita.png" alt="ChikoritaButton">
+    <img id="Logo" src="Recursos/Imagenes/LogoV2.png" alt="Logo">
+    <img id="Face" src="Recursos/Imagenes/TommyV2.png" alt="Face">
+    <img id="JugarButton" src="Recursos/Imagenes/Jugar.png" alt="PlayButton">
+    <img id="ControlesButton" src="Recursos/Imagenes/Controles.png" alt="ControlesButton">
+
+    <script>
+
+         var grito = document.getElementById("gritoChikorita"); 
+         var SonidoBoton1 = document.getElementById("boton1"); 
+
+
+        // Función que se ejecutará cuando se haga clic en la imagen
+        function playClick() {
+            SonidoBoton1.play();
+            SonidoBoton1.onended = function() {
+                window.location.href = "SeleccionNiveles.html";
+            };
+        }
+
+        function controlClick() {
+            SonidoBoton1.play();
+            SonidoBoton1.onended = function() {
+                window.location.href = "Controles.html";
+            };
+        }
+
+        function chikoritaClick() {
+            grito.play();
+            grito.onended = function() {
+                window.location.href = "Creditos.html";
+            };
+            //alert('Has hecho clic en el botón de Chikorita');
+        }
+
+        // Obtén la referencia a las imágenes
+        const chikoritaButton = document.getElementById('ChikoritaButton');
+        const playButton = document.getElementById('JugarButton');
+        const controlButton = document.getElementById('ControlesButton');
+
+        // Agrega eventos de clic a las imágenes
+        chikoritaButton.addEventListener('click', chikoritaClick);
+        playButton.addEventListener('click', playClick);
+        controlButton.addEventListener('click', controlClick);
+
+    </script>
+
+</body>
+</html>
+

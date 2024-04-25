@@ -1,0 +1,6 @@
+Para cargar nuevas musica, pon el archivo mp3 recursos, musica
+Enel botón desconocido escribe:
+./Recursos/Musica/TuArchivo.mp3
+Elije un numero de 0 (Super Difícil ) a 255(Super fácil)
+
+La pantalla trofeo necesita camara y un marcador Hiro para mostrar el trofeo.

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>PR Cyber Beatdown</title>
+</head>
+
+<body> 
+    <video id="videoFlechas" style="display: none;" autoplay loop>
+        <source src="Recursos/Imagenes/FlechasR.mp4" type="video/mp4">
+        Tu navegador no soporta el elemento de video.
+    </video>
+
+    <audio id="choque" src="Recursos/Musica/Choque.wav" preload="auto"></audio>
+    <audio id="muerte" src="Recursos/Musica/Muerte.wav" preload="auto"></audio>
+    <audio id="moneda" src="Recursos/Musica/Moneda.wav" preload="auto"></audio>
+
+
+    <script type="module">
+        
+        import * as THREE from './JS/three.module.js';
+        import { OrbitControls } from './JS/OrbitControls.js';
+        import { GLTFLoader } from './JS/GLTFLoader.js';;
+        import { GUI } from './JS/lil-gui.module.min.js';
+        import { FontLoader } from './JS/FontLoader.js';
+	    import { TextGeometry } from './JS/TextGeometry.js';
+
+        ////////////////////////////////////////Inicializar Escena//////////////////////////////////////////////////////
+    
+        // Crear Escena/Definir Fondo
+        var Escena = new THREE.Scene();
+        var CTexturaFondo = new THREE.TextureLoader();
+        CTexturaFondo.crossOrigin = "Anonymous";
+        CTexturaFondo.load('./Recursos/Imagenes/Skybox.jpg', function (TexturaFondo) {
+            Escena.background = TexturaFondo;
+        });
+
+        // Crear Render
+        var Render = new THREE.WebGLRenderer();
+        Render.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(Render.domElement);
+        Render.setPixelRatio(window.devicePixelRatio);
+        Render.shadowMap.enabled = true;
+
+        // Cámara y Luz
+        let Camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
+        Camara.position.set(50,25,30);
+        Camara.lookAt(50,25,0);
+        var controles = new OrbitControls(Camara, Render.domElement);
+        const luz = new THREE.AmbientLight(0xffffff);
+        Escena.add(luz);
+
+        //Variables Importantes
+        var camino = localStorage.getItem("camino");
+        var comparadorCubos = localStorage.getItem("comparadorCubos");
+        //console.log(comparadorCubos);
+        //console.log(camino);
+
+        const velocidadMovimiento = 30;
+        const velocidadRotacion = Math.PI / 2;
+        const velocidadMovimientoObjetos = 50; //unidades por segundo
+        let tiempoGeneracion=1;
+
+        //Añade Musica
+        const listener = new THREE.AudioListener();
+        const musica = new THREE.PositionalAudio( listener );
+        const audioLoader = new THREE.AudioLoader();
+        audioLoader.load( camino, function( buffer ) {
+        musica.setBuffer( buffer );
+	    musica.setVolume( 1 ); 
+        musica.setRefDistance(30);
+        });
+        const analyser = new THREE.AudioAnalyser( musica, 32 );
+
+        var SonidoChoque = document.getElementById("choque");
+        var SonidoMuerte = document.getElementById("muerte");
+        var SonidoMoneda = document.getElementById("moneda"); 
+        SonidoChoque.volume = 0.5;
+        SonidoMoneda.volume = 0.3;
+
+        ////////////////////////////////////////Modelos Nativos Three.js//////////////////////////////////////////////////////
+
+        // Cargar el video para las paredes
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('videoFlechas');
+            // Crear una textura a partir del video
+            const texture = new THREE.VideoTexture(video);
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.format = THREE.RGBAFormat;
+            const materialParedes = new THREE.MeshStandardMaterial({ map: texture });
+
+            // Codigo Paredes
+            const ParedIzq = new THREE.Mesh(new THREE.BoxGeometry(100, 10, 40), materialParedes);
+            ParedIzq.position.set(50, 45, 20);
+            Escena.add(ParedIzq);
+            const ParedDer = new THREE.Mesh(new THREE.BoxGeometry(100, 10, 40), materialParedes);
+            ParedDer.position.set(50, -5, 20);
+            Escena.add(ParedDer);
+
+            //Codigo Piso
+            const piso = new THREE.Mesh(new THREE.BoxGeometry(100, 40, 1), materialParedes);
+            piso.position.set(50, 20, 0);
+            Escena.add(piso);
+        });
+
+        ////////////////////////////////////////Modelos 3D//////////////////////////////////////////////////////
+       
+        //Auxiliar Nave
+        const geometriaAuxNave = new THREE.SphereGeometry(1);
+        //const materialAuxNave = new THREE.MeshBasicMaterial({ color: 0xff0000});
+        const materialAuxNave = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0});
+        const AuxNave = new THREE.Mesh(geometriaAuxNave, materialAuxNave);
+        AuxNave.position.set(25, 20, 30);
+        Escena.add(AuxNave);
+ 
+
+        // Codigo Nave
+        let NaveCargada = false;
+        let Nave;
+        const CargadorNave = new GLTFLoader();
+        CargadorNave.load('./Recursos/Modelos/Nave.glb', (loadedObject1) => {
+            Nave = loadedObject1.scene;
+            Nave.scale.set(.18, .18, .18);
+            Nave.position.set(0, 0, -.5);
+            Nave.rotation.set( Math.PI/ 2, 0, 0);
+            AuxNave.add(Nave);
+            NaveCargada = true;
+        }); 
+
+        // Codigo Torre
+        let TorreCargada = false;
+        let Torre;
+        const CargadorTorre = new GLTFLoader();
+        CargadorNave.load('./Recursos/Modelos/TorreM.glb', (loadedObject2) => {
+            Torre = loadedObject2.scene;
+            Torre.scale.set(10, 10, 10);
+            Torre.position.set(130, 20, 0);
+            Torre.rotation.set( Math.PI/ 2, Math.PI/ 2, 0);
+            Escena.add(Torre);
+            TorreCargada = true;
+        }); 
+
+        // Codigo Tommy
+        let CargaTommy = false;
+        let Tommy;
+        let mixerTommy;
+        let animations;
+        var IndexTommy=0;
+        const CargadorTommy = new GLTFLoader();
+        CargadorTommy.load('./Recursos/Modelos/Tommy.glb',
+            (loadedObject) => {
+                Tommy = loadedObject.scene;
+                Tommy.scale.set(.6, .6, .6);
+                Tommy.position.set(-.3, -.1, -.4);
+                Tommy.rotation.set(Math.PI / 2, Math.PI / 2, 0);
+                AuxNave.add(Tommy);
+                animations = loadedObject.animations;
+                mixerTommy = new THREE.AnimationMixer(Tommy);
+                CargaTommy = true;
+                activarAnimacion0();
+            });
+
+        // Gif Explosion
+        const cargadorExplosion = new THREE.TextureLoader();
+        const texturaExplosion = cargadorExplosion.load('./Recursos/Imagenes/Kaboom.png');
+        const materialExplosion = new THREE.MeshBasicMaterial({ map: texturaExplosion,  transparent: true}); 
+        const geometriaExplosion = new THREE.PlaneGeometry(3, 3); 
+        const explosion = new THREE.Mesh(geometriaExplosion, materialExplosion);
+        explosion.position.set(-1,0,0);
+        explosion.rotation.z = -Math.PI/2;
+        explosion.rotation.y = -Math.PI/2;
+        
+
+        // Codigo Ecliptor
+        const AuxEcliptor = new THREE.Mesh(geometriaAuxNave, materialAuxNave);
+        AuxEcliptor.position.set(120, 20, 0);
+        Escena.add(AuxEcliptor);
+        let EcliptorCargado = false;
+        let Ecliptor;
+        let mixerEcliptor;
+        let animations2;
+        const CargadorEcliptor = new GLTFLoader();
+        CargadorEcliptor.load('./Recursos/Modelos/Ecliptor.glb', (loadedObject0) => {
+            Ecliptor= loadedObject0.scene;
+            Ecliptor.scale.set(15, 15, 15);
+            Ecliptor.position.set(0, 0, 0);
+            Ecliptor.rotation.set(0, -Math.PI/2, -Math.PI/2);
+            AuxEcliptor.add(Ecliptor);
+            animations2 = loadedObject0.animations;
+            mixerEcliptor = new THREE.AnimationMixer(Ecliptor);
+            EcliptorCargado = true;
+            activarAnimacionEcliptor0();
+        });
+        const luzaux2 = new THREE.PointLight( 0xffffff, 10, 70 );
+        luzaux2.position.set( 70, 20, 40 );
+        Escena.add( luzaux2 );
+
+               
+        ///////////////////////////////////////Puntaje//////////////////////////////////////////////////////
+
+        //Vidas 
+        const geometriaVidas = new THREE.BoxGeometry(.001,1,1);
+        const texturaVidas = new THREE.TextureLoader().load('./Recursos/Imagenes/TVidas.png'); 
+        const materialVidas = new THREE.MeshBasicMaterial({  map: texturaVidas, transparent: true,});
+        const vida0 = new THREE.Mesh(geometriaVidas, materialVidas);
+        vida0.position.set(0, 1, -2.8);
+        vida0.rotation.x=Math.PI/2;
+        AuxNave.add(vida0);
+        const vida1 = new THREE.Mesh(geometriaVidas, materialVidas);
+        vida1.position.set(0, 0, -2.8);
+        vida1.rotation.x=Math.PI/2;
+        AuxNave.add(vida1);
+        const vida2 = new THREE.Mesh(geometriaVidas, materialVidas);
+        vida2.position.set(0, -1, -2.8);
+        vida2.rotation.x=Math.PI/2;
+        AuxNave.add(vida2);
+        var NumeroVidas=3;
+
+        //Codigo Moneda de Poder
+        const CargadorMoneda = new THREE.TextureLoader();
+        const texturaMoneda = CargadorMoneda.load('./Recursos/Imagenes/TEsferas.jpg');
+        const geometriaMoneda = new THREE.CylinderGeometry(.25,.25,.05,6);
+        const materialMoneda= new THREE.MeshBasicMaterial({ map: texturaMoneda });
+        const Moneda = new THREE.Mesh(geometriaMoneda, materialMoneda);
+        Moneda.position.set(0,.5,2.25);
+        Moneda.rotation.x = Math.PI/2;
+        Moneda.rotation.z = Math.PI/2;
+        AuxNave.add(Moneda);
+        
+        //Letras
+        let Cita;
+        function puntaje(valor) {
+        if (Cita) {
+            AuxNave.remove(Cita);
+            Cita = null; // Limpiar la referencia a la cita anterior
+        }
+        const loader1 = new FontLoader();
+        var textoValor = valor.toString();
+        loader1.load('./Recursos/Modelos/GothamBlack.json', function (GothamBlack) {
+            const Tgeo = new TextGeometry(textoValor, {
+                font: GothamBlack,
+                size: .4,
+                height: .1,
+                curveSegments: 1,
+                bevelEnabled: true,
+                bevelThickness: 0,
+                bevelSize: 0,
+                bevelOffset: 0,
+                bevelSegments: 1
+            });
+
+            Cita = new THREE.Mesh(Tgeo, [
+                new THREE.MeshBasicMaterial(), //Color enfrente
+                new THREE.MeshBasicMaterial({ color: 0x0a0a0a }) //Color Lateral   
+            ]);
+                Cita.position.set(0, .2, 2);
+                Cita.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
+                Cita.castShadow = true;
+                Cita.receiveShadow = true;
+                AuxNave.add(Cita);
+            });
+        }
+        puntaje(0);
+        
+        ////////////////////////////////////////Eventos de Teclado//////////////////////////////////////////////////////
+
+        //Eventos de Teclado
+        window.addEventListener('keydown', function(event) {
+            if (event.key === 'p') {
+                musica.play();
+                activarAnimacionEcliptor();
+            }
+        });
+
+        window.addEventListener('keydown', function(event) {
+            if (event.key === 'o') {
+                musica.pause();
+            }
+        });
+
+        const teclasFunciones = {
+            'w': {
+                presionada: false,
+                activar: activarAnimacionW,
+            },
+            'a': {
+                presionada: false,
+                activar: activarAnimacionA,
+            },
+            's': {
+                presionada: false,
+                activar: activarAnimacionS,
+            },
+            'd': {
+                presionada: false,
+                activar: activarAnimacionD,
+            }
+        };
+
+        document.addEventListener('keydown', function (event) {
+        const tecla = event.key;
+        if (teclasFunciones[tecla] && !teclasFunciones[tecla].presionada) {
+            teclasFunciones[tecla].presionada = true;
+            teclasFunciones[tecla].activar();
+            }
+        });
+
+        document.addEventListener('keyup', function (event) {
+        const tecla = event.key;
+        if (teclasFunciones[tecla]) {
+            teclasFunciones[tecla].presionada = false; }
+        });
+
+        var animacionDeseadaIndex= 0;
+        var animacionDeseadaEcliptor= 0;
+        var contadorEcliptor= 0;
+
+        function activarAnimacion0() {
+        if (mixerTommy && animations && animations.length > 0) {
+                detenerAnimacion();
+                animacionDeseadaIndex = 4;
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.reset();
+                action.play();
+            }
+        }
+
+        function activarAnimacionEcliptor0() {
+        if (mixerEcliptor && animations2 && animations2.length > 0) {
+            animacionDeseadaEcliptor = 0;
+            const action1 = mixerEcliptor.clipAction(animations2[animacionDeseadaEcliptor]);
+            action1.reset();
+            action1.play();
+        }    
+        }
+
+        function activarAnimacionEcliptor() {
+           if (mixerEcliptor && animations2 && animations2.length > 0) {
+            detenerAnimacionEcliptor();
+        
+            animacionDeseadaEcliptor +=1;
+            if (animacionDeseadaEcliptor == 5){
+                animacionDeseadaEcliptor=1;
+            }
+            const action = mixerEcliptor.clipAction(animations2[animacionDeseadaEcliptor]);
+            action.reset(); 
+            action.play();        
+            //setTimeout(() => { action.stop(); }, 2000);
+            }
+        }
+
+        function activarAnimacionW() {
+        if (mixerTommy && animations && animations.length > 0) {
+                detenerAnimacion();
+                animacionDeseadaIndex = 3;
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.reset();
+                action.play();
+            }
+        }
+        
+        function activarAnimacionA() {
+        if (mixerTommy && animations && animations.length > 0) {
+                detenerAnimacion();
+                animacionDeseadaIndex = 0;
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.reset();
+                action.play();
+            }
+        }
+
+        function activarAnimacionS() {
+        if (mixerTommy && animations && animations.length > 0) {
+                detenerAnimacion();
+                animacionDeseadaIndex = 1;
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.reset();
+                action.play();
+            }
+        }
+
+        function activarAnimacionD() {
+        if (mixerTommy && animations && animations.length > 0) {
+                detenerAnimacion();
+                animacionDeseadaIndex = 2;
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.reset();
+                action.play();
+            }
+        }
+
+        function detenerAnimacion() {
+        if (mixerTommy && animations && animations.length > 0) {
+                const action = mixerTommy.clipAction(animations[animacionDeseadaIndex]);
+                action.stop();
+            }
+        }
+
+
+
+        function detenerAnimacionEcliptor() {
+        if (mixerEcliptor && animations2 && animations2.length > 0) {
+                const action1 = mixerEcliptor.clipAction(animations2[animacionDeseadaEcliptor]);
+                action1.stop();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            alert('Espera un momento a que carguen todos los modelos, luego: Presiona la tecla "P" para comenzar');
+        });
+
+        ////////////////////////////////////////Cubos para Esquivar//////////////////////////////////////////////////////
+
+        function crearCubo(coordenadas) {
+            const geometriaCubo = new THREE.BoxGeometry(10, 10, 10);
+
+            const texturas = [
+                './Recursos/Imagenes/TCubos1.jpg',
+                './Recursos/Imagenes/TCubos2.jpg',
+                './Recursos/Imagenes/TCubos3.jpg',
+                './Recursos/Imagenes/TCubos4.jpg'
+            ];
+
+            // Selecciona una textura aleatoria del array
+            const indiceTexturaAleatoria = Math.floor(Math.random() * texturas.length);
+            const texturaAleatoria = new THREE.TextureLoader().load(texturas[indiceTexturaAleatoria]);
+
+            const materialCubo = new THREE.MeshBasicMaterial({ map: texturaAleatoria, });    
+
+            const cubo = new THREE.Mesh(geometriaCubo, materialCubo);
+            cubo.position.copy(coordenadas);
+            cubo.userData.mover = true;
+            Escena.add(cubo);
+
+        }
+
+        function eliminarCubosExcedidos() {
+            const coordenadaLimiteX = 0; 
+            const cubosAEliminar = Escena.children.filter(objeto => {
+                return objeto instanceof THREE.Mesh && objeto.position.x < coordenadaLimiteX && objeto.userData.mover;
+                });
+            cubosAEliminar.forEach(cubo => {
+                Escena.remove(cubo);
+            });
+        }
+
+        function moverCubos(deltaTime) {
+            Escena.children.forEach(objeto => {
+                if (objeto instanceof THREE.Mesh && objeto.userData.mover) {
+                    const movimiento = velocidadMovimientoObjetos * deltaTime;
+                    objeto.position.x += -movimiento; // Por ejemplo, movemos el cubo con una velocidad constante
+                }
+            });
+            eliminarCubosExcedidos();
+        }
+
+        function detectarColisiones(cubo, nave) {
+            const distancia = cubo.position.distanceTo(nave.position);
+            const radioCubo = 5; 
+            const radioNave = 1; 
+
+            if (distancia < radioCubo + radioNave) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        let numeroColisiones=0;
+        let tiempoColisiones=1.3;
+        function actualizarColisiones(deltaTime) {
+            const cubos = Escena.children.filter(objeto => objeto instanceof THREE.Mesh && objeto.userData.mover);
+            tiempoColisiones += deltaTime;
+            cubos.forEach(cubo => {
+                if (detectarColisiones(cubo, AuxNave) && tiempoColisiones>=2) {
+                    numeroColisiones++;
+                    //console.log('Colision Num:'+ numeroColisiones);
+                    switch(numeroColisiones) {
+                        case 1:
+                            SonidoChoque.play();
+                            AuxNave.remove(vida2); 
+                            tiempoColisiones=0;
+                            NumeroVidas=2;
+                            activarAnimacionEcliptor();
+                            break;
+                        case 2:
+                            SonidoChoque.play();
+                            AuxNave.remove(vida1); 
+                            tiempoColisiones=0;
+                            NumeroVidas=1;
+                            activarAnimacionEcliptor();
+                            break;
+                        case 3:
+                            SonidoMuerte.play();
+                            activarAnimacionEcliptor();
+                            AuxNave.add(explosion);
+                            AuxNave.remove(vida0); 
+                            SonidoMuerte.onended = function() {
+                                tiempoColisiones=0;
+                                Escena.remove(AuxNave);
+                                window.location.href = "Derrota.html";
+                            };      
+                            break;       
+                    default:
+                    //console.log('Colision Num:'+numeroColisiones);         
+                    tiempoColisiones=0;
+                }  
+                }
+            });
+        }
+
+        ////////////////////////////////////////Esferas a Recolectar//////////////////////////////////////////////////////
+
+        const loader = new THREE.TextureLoader();
+        const texturaEsfera = loader.load('./Recursos/Imagenes/TEsferas.jpg');
+        function crearEsfera(coordenadas) {
+            const geometriaEsfera = new THREE.CylinderGeometry(4,4,.5,6);
+            const materialEsfera = new THREE.MeshBasicMaterial({ map: texturaEsfera });
+            const esfera = new THREE.Mesh(geometriaEsfera, materialEsfera);
+            esfera.rotation.x = Math.PI/2;
+            esfera.rotation.z = Math.PI/2;
+            esfera.position.copy(coordenadas);
+            esfera.userData.mover2 = true;
+            Escena.add(esfera);
+        }
+
+        function eliminarEsferasExcedidas() {
+            const coordenadaLimiteX = 0; 
+            const EsferasAEliminar = Escena.children.filter(objeto => {
+                return objeto instanceof THREE.Mesh && objeto.position.x < coordenadaLimiteX && objeto.userData.mover2;
+                });
+
+            EsferasAEliminar.forEach(esfera => {
+                Escena.remove(esfera);
+            });
+        }
+
+        function moverEsferas(deltaTime) {
+            Escena.children.forEach(objeto => {
+                if (objeto instanceof THREE.Mesh && objeto.userData.mover2) {
+                    const movimiento = velocidadMovimientoObjetos * deltaTime;
+                    objeto.position.x += -movimiento; 
+                    objeto.rotation.y += movimiento/8;
+                    //objeto.rotation.z += movimiento/8;
+                }
+            });
+            eliminarEsferasExcedidas();
+        }
+
+        function detectarColisionesEsfera(esfera, nave) {
+            const distancia = esfera.position.distanceTo(nave.position);
+            const radioEsfera = 3; 
+            const radioNave = 1; 
+
+            if (distancia < radioEsfera + radioNave) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        var numeroColisionesEsferas=0;
+        let tiempoColisionesEsferas=1.3;
+        function actualizarColisionesEsferas(deltaTime) {
+            const esferas = Escena.children.filter(objeto => objeto instanceof THREE.Mesh && objeto.userData.mover2);
+            tiempoColisiones += deltaTime;
+            esferas.forEach(esfera => {
+                if (detectarColisionesEsfera(esfera, AuxNave) && tiempoColisiones>=2) {
+                    SonidoMoneda.play();
+                    numeroColisionesEsferas++;
+                    puntaje(numeroColisionesEsferas);
+                    Escena.remove(esfera);
+                    tiempoColisionesEsferas=0;
+                }
+            });
+        }
+
+        ////////////////////////////////////////Controladores para los Canales//////////////////////////////////////////////////////
+
+        //Canales Cubos
+        var a=0; var b=0; var c=0; var d=0; var e=0; var f=0; var g=0; var h=0;
+        var i=0; var j=0; var k=0; var l=0; var m=0; var n=0; var o=0; var p=0;
+
+        //Canales Esferas
+        var aC=0; var bC=0; var cC=0; var dC=0; var eC=0; var fC=0; var gC=0; var hC=0;
+        var iC=0; var jC=0; var kC=0; var lC=0; var mC=0; var nC=0; var oC=0; var pC=0;
+
+        // Función para asignar valores únicos 
+        function asignarValoresUnicos(cantidad, min, max, nombresVariables) {
+            if (cantidad > max - min + 1) {
+                throw new Error("No se pueden generar más números únicos que el rango proporcionado.");
+            }
+
+            let numeros = [];
+            for (let i = min; i <= max; i++) {
+                numeros.push(i);
+            }
+
+            for (let i = 0; i < cantidad; i++) {
+                const indiceAleatorio = Math.floor(Math.random() * numeros.length);
+                window[nombresVariables[i]] = numeros.splice(indiceAleatorio, 1)[0];
+            }  
+
+        }
+        const nombresVariables = [ "canalA", "canalB", "canalC", "canalD",  "canalE", "canalF", "canalG", "canalH", 
+        "canalI", "canalJ", "canalK", "canalL", "canalM", "canalN", "canalO", "canalP"];
+
+        ////////////////////////////////////////DeltaTiempo y Velocidades//////////////////////////////////////////////////////
+        let tiempoAnterior = 0;
+        let anguloObjetivo = 0;
+        let tiempoTranscurrido = 0;
+        let tiempoAcumulado=0;
+        
+        function Animacion(tiempoActual) {
+            const deltaTime = (tiempoActual - tiempoAnterior) / 1000;
+            tiempoAnterior = tiempoActual;
+            tiempoAcumulado += deltaTime;
+      
+            ////////////////////////////////////////Movimiento y Animaciones Nave//////////////////////////////////////////////////////
+            if (NaveCargada== true){
+
+                if (teclasFunciones['w'].presionada && AuxNave.position.z <36) {
+                    const rotacionActualY = Nave.rotation.y;
+                    const rotacionObjetivoY = 0;
+                    Nave.rotation.y = THREE.MathUtils.lerp(rotacionActualY, rotacionObjetivoY, velocidadRotacion * deltaTime);
+                    Nave.rotation.y = THREE.MathUtils.lerp(rotacionActualY, rotacionObjetivoY, velocidadRotacion * deltaTime);
+
+                    const rotacionActualZ = Nave.rotation.z;
+                    const rotacionObjetivoZ =  Math.PI/ 4;
+                    Nave.rotation.z = THREE.MathUtils.lerp(rotacionActualZ, rotacionObjetivoZ, velocidadRotacion * deltaTime);
+
+                    const velocidad = new THREE.Vector3(0, 0, velocidadMovimiento * deltaTime);
+                    AuxNave.position.add(velocidad);
+                }
+           
+                if (teclasFunciones['a'].presionada && AuxNave.position.y <36) {
+                    const rotacionActual = Nave.rotation.x;
+                    const rotacionObjetivo = Math.PI / 6;
+                    Nave.rotation.x = THREE.MathUtils.lerp(rotacionActual, rotacionObjetivo, velocidadRotacion * deltaTime);
+                    const velocidad = new THREE.Vector3(0, velocidadMovimiento * deltaTime, 0);
+                    AuxNave.position.add(velocidad);
+                }
+
+                if (teclasFunciones['s'].presionada && AuxNave.position.z >4) {
+                    const rotacionActualY = Nave.rotation.y;
+                    const rotacionObjetivoY = 0;
+                    Nave.rotation.y = THREE.MathUtils.lerp(rotacionActualY, rotacionObjetivoY, velocidadRotacion * deltaTime);
+
+                    const rotacionActualZ = Nave.rotation.z;
+                    const rotacionObjetivoZ = -Math.PI / 4;
+                    Nave.rotation.z = THREE.MathUtils.lerp(rotacionActualZ, rotacionObjetivoZ, velocidadRotacion * deltaTime);
+
+                    const velocidad = new THREE.Vector3(0, 0, -velocidadMovimiento * deltaTime);
+                    AuxNave.position.add(velocidad);;
+                }
+
+                if (teclasFunciones['d'].presionada && AuxNave.position.y >4) {
+                    const rotacionActual = Nave.rotation.x;
+                    const rotacionObjetivo = Math.PI*5 / 6;
+                    Nave.rotation.x = THREE.MathUtils.lerp(rotacionActual, rotacionObjetivo, velocidadRotacion * deltaTime);
+                    const velocidad = new THREE.Vector3(0, -velocidadMovimiento * deltaTime, 0);
+                    AuxNave.position.add(velocidad);
+
+                }else {
+                    const rotacionActualX = Nave.rotation.x;
+                    const anguloObjetivoX =  Math.PI/ 2;
+                    Nave.rotation.x = THREE.MathUtils.lerp(rotacionActualX, anguloObjetivoX, velocidadRotacion * deltaTime);
+
+                    const rotacionActualY = Nave.rotation.y;
+                    const anguloObjetivoY = 0;
+                    Nave.rotation.y = THREE.MathUtils.lerp(rotacionActualY, anguloObjetivoY, velocidadRotacion * deltaTime);
+
+                    const rotacionActualZ = Nave.rotation.z;
+                    const anguloObjetivoZ = 0;
+                    Nave.rotation.z = THREE.MathUtils.lerp(rotacionActualZ, anguloObjetivoZ, velocidadRotacion * deltaTime);
+                }
+
+                
+            }
+
+            ////////////////////////////////////////Analizador de Sonido para Cubos//////////////////////////////////////////////////////
+            var controladorData=analyser.getFrequencyData();
+            
+            if (tiempoAcumulado >= tiempoGeneracion && musica.isPlaying) {
+
+                asignarValoresUnicos(16, 0, 15, nombresVariables);
+
+                // Controlador A
+                a = controladorData[canalA];
+                if (a > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 5, 5));
+                    aC=1;
+                }else{
+                    aC=0;
+                }
+
+                // Controlador B
+                b = controladorData[canalB];
+                if (b > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 15, 5));
+                    bC=1;
+                }else{
+                    bC=0;
+                }
+
+                // Controlador C
+                c = controladorData[canalC];
+                if (c > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 25, 5));
+                    cC=1;
+                }else{
+                    cC=0;
+                }
+
+                // Controlador D
+                d = controladorData[canalD];
+                if (d > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 35, 5));
+                    dC=1;
+                }else{
+                    dC=0;
+                }
+
+                // Controlador E
+                e = controladorData[canalE];
+                if (e > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 5, 15));
+                    eC=1;
+                }else{
+                    eC=0;
+                }
+
+                // Controlador F
+                f = controladorData[canalF];
+                if (f > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 15, 15));
+                    fC=1;
+                }else{
+                    fC=0;
+                }
+
+                // Controlador G
+                g = controladorData[canalG];
+                if (g > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 25, 15));
+                    gC=1;
+                }else{
+                    gC=0;
+                }
+
+                // Controlador H
+                h = controladorData[canalH];
+                if (h > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 35, 15));
+                    hC=1;
+                }else{
+                    hC=0;
+                }
+
+                // Controlador I
+                i = controladorData[canalI];
+                if (i > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 5, 25));
+                    iC=1;
+                }else{
+                    iC=0;
+                }
+
+                // Controlador J
+                j = controladorData[canalJ];
+                if (j > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 15, 25));
+                    jC=1;
+                }else{
+                   jC=0;
+                }
+
+                // Controlador K
+                k = controladorData[canalK];
+                if (k > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 25, 25));
+                    kC=1;
+                }else{
+                    kC=0;
+                }
+
+                // Controlador L
+                l = controladorData[canalL];
+                if (l > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 35, 25));
+                    lC=1;
+                }else{
+                    lC=0;
+                }
+
+                // Controlador M
+                m = controladorData[canalM];
+                if (m > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 5, 35));
+                    mC=1;
+                }else{
+                    mC=0;
+                }
+
+                // Controlador N
+                n = controladorData[canalN];
+                if (n > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 15, 35));
+                    nC=1;
+                }else{
+                   nC=0;
+                }
+
+                // Controlador O
+                o = controladorData[canalO];
+                if (o > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 25, 35));
+                    oC=1;
+                }else{
+                    oC=0;
+                }
+
+                // Controlador P
+                p = controladorData[canalP];
+                if (p > comparadorCubos) {
+                    crearCubo(new THREE.Vector3(85, 35, 35));
+                    pC=1;
+                }else{
+                    pC=0;
+                }
+
+            ////////////////////////////////////////Generador de Esferas//////////////////////////////////////////////////////
+                // Esferas A
+                if ( bC + eC > 1 ){ crearEsfera(new THREE.Vector3(85, 5, 5)); }
+
+                // Esferas B
+                if ( aC + cC + fC >= 2 ){ crearEsfera(new THREE.Vector3(85, 15, 5)); }
+
+                // Esferas C
+                if ( bC + dC + gC >= 2 ){ crearEsfera(new THREE.Vector3(85, 25, 5)); }
+
+                // Esferas D
+                if ( cC + hC > 1 ){ crearEsfera(new THREE.Vector3(85, 35, 5)); }
+
+                // Esferas E
+                if ( iC + fC + aC >= 2 ){ crearEsfera(new THREE.Vector3(85, 5, 15)); }
+
+                // Esferas F
+                if ( bC + eC + gC + jC >= 3 ){ crearEsfera(new THREE.Vector3(85, 15, 15)); }
+
+                // Esferas G
+                if ( cC + fC + hC + kC >= 3 ){ crearEsfera(new THREE.Vector3(85, 25, 15)); }
+
+                // Esferas H
+                if ( dC + gC + lC >= 2 ){ crearEsfera(new THREE.Vector3(85, 35, 15)); }
+
+                // Esferas I
+                if ( eC + jC + mC >= 2 ){ crearEsfera(new THREE.Vector3(85, 5, 25)); }
+
+                // Esferas J
+                if ( fC + iC + kC + nC >= 3 ){ crearEsfera(new THREE.Vector3(85, 15, 25)); }
+
+                // Esferas K
+                if ( gC + jC + lC + oC >= 3 ){ crearEsfera(new THREE.Vector3(85, 25, 25)); }
+
+                // Esferas L
+                if ( hC + kC + iC >= 2 ){ crearEsfera(new THREE.Vector3(85, 35, 25)); }
+
+                // Esferas M
+                if ( iC + nC > 1 ){ crearEsfera(new THREE.Vector3(85, 5, 35)); }
+
+                // Esferas N
+                if ( jC + mC + oC >= 2 ){ crearEsfera(new THREE.Vector3(85, 15, 35)); }
+
+                // Esferas O
+                if ( kC + nC + pC >= 2 ){ crearEsfera(new THREE.Vector3(85, 25, 35)); }
+
+                // Esferas P
+                if ( oC + lC > 1 ){ crearEsfera(new THREE.Vector3(85, 35, 35)); }
+
+                tiempoAcumulado = 0;
+            }
+
+            if(  numeroColisionesEsferas>= 1 && !musica.isPlaying){
+                localStorage.setItem("NumeroVidas", NumeroVidas);
+                localStorage.setItem("numeroColisionesEsferas", numeroColisionesEsferas);
+                window.location.href = "Victoria.html";
+            }
+
+            if (musica.isPlaying && CargaTommy){
+                Tommy.rotation.y +=.02;
+            }
+
+            if( CargadorEcliptor){
+                if(AuxEcliptor.position.x >=90){
+                    const velocidadMovimientoEcliptor = 12;
+                    const velocidad = new THREE.Vector3( -velocidadMovimientoEcliptor * deltaTime, 0,0);
+                    AuxEcliptor.position.add(velocidad);
+                }
+
+                if(AuxEcliptor.position.x<=90 && contadorEcliptor==0){
+                    activarAnimacionEcliptor();
+                    contadorEcliptor=1;
+                }
+            }
+
+            if (mixerTommy) {
+                mixerTommy.update(deltaTime);
+            }
+
+            if (mixerEcliptor) {
+                mixerEcliptor.update(deltaTime);
+            }
+
+            moverCubos(deltaTime);
+            moverEsferas(deltaTime);
+            actualizarColisiones(deltaTime);
+            actualizarColisionesEsferas(deltaTime);
+
+            //Actualizar Camara
+            Camara.position.set(AuxNave.position.x-4,AuxNave.position.y,AuxNave.position.z+1);
+            Camara.lookAt(AuxNave.position.x,AuxNave.position.y,AuxNave.position.z);
+            Camara.rotateZ(-Math.PI / 2); 
+            requestAnimationFrame(Animacion);
+            Render.render(Escena, Camara);
+            //console.log(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p);
+        }
+
+        function iniciarAnimacion() {
+            requestAnimationFrame(function (timestamp) {
+                tiempoAnterior = timestamp;
+                Animacion(timestamp);
+            });
+        }
+        iniciarAnimacion();
+
+    </script>
+</body>
+</html>

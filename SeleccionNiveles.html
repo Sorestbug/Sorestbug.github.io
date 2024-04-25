@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Seleccion de Niveles</title>
+    <style>
+        body {
+            /* Establecer imagen de fondo */
+            background-image: url('Recursos/Imagenes/FondoV7.jpg');
+            background-size: cover;
+            background-repeat: no-repeat; 
+            /*background-position: center;*/
+            color: white;
+            position: absolute;
+        }
+
+        #Seleccion {
+            position: absolute; 
+            top: -50px; 
+            left: -700px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.4);
+        }
+
+        #Button1 {
+            position: absolute; 
+            top: -50px; 
+            left: -500px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #Button1:hover {
+            transform: scale(.4); 
+        }
+
+        #Button2 {
+            position: absolute; 
+            top: -50px; 
+            left: 100px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #Button2:hover {
+            transform: scale(.4); 
+        }
+
+        #Button3 {
+            position: absolute; 
+            top: 150px; 
+            left: -500px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #Button3:hover {
+            transform: scale(.4); 
+        }
+
+        #Button4 {
+            position: absolute; 
+            top: 150px; 
+            left: 100px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.3);
+        }
+        #Button4:hover {
+            transform: scale(.4); 
+        }
+
+        #numeroInput {
+            position: absolute;
+            top: 502px; 
+            left: 1030px;
+        }
+
+        #textoInput {
+            position: absolute;
+            top: 502px; 
+            left: 850px; 
+        }
+
+        #SalirButton {
+            position: absolute; 
+            top: 370px; 
+            left: 40px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.2);
+        }
+        #SalirButton:hover {
+            transform: scale(.3); 
+        }
+
+    </style>
+</head>
+<body>
+    <audio id="boton" src="Recursos/Musica/Boton1.wav" preload="auto"></audio>
+    <audio id="boton1" src="Recursos/Musica/Flynn.mp3" preload="auto"></audio>
+    <audio id="boton2" src="Recursos/Musica/GOGOPR.mp3" preload="auto"></audio>
+    <audio id="boton3" src="Recursos/Musica/SPECIALZ.mp3" preload="auto"></audio>
+
+    <!--PNGs -->
+    <img id="Seleccion" src="Recursos/Imagenes/SeleccionaNivel.png" alt="Seleccion">
+    <img id="Button1" src="Recursos/Imagenes/BFlynn.png" alt="boton1">
+    <img id="Button2" src="Recursos/Imagenes/BPower.png" alt="boton2">
+    <img id="Button3" src="Recursos/Imagenes/BSpecialz.png" alt="boton3">
+    <img id="Button4" src="Recursos/Imagenes/BDesconocido.png" alt="boton4">
+    <img id="SalirButton" src="Recursos/Imagenes/Salir.png" alt="Salir">
+
+    <input type="text" id="numeroInput" placeholder="0(Difícil)-255(Fácil)" list="niveles">
+    <datalist id="niveles">
+        <option value="50">
+        <option value="127">
+        <option value="200">
+    </datalist>
+    <input type="text" id="textoInput" placeholder="./Recursos/Musica/Cancion.mp3" list="opciones">
+    <datalist id="opciones">
+        <option value="./Recursos/Musica/Idol.mp3">
+        <option value="./Recursos/Musica/KickBack.mp3">
+        <option value="./Recursos/Musica/Shiranai.mp3">
+        <option value="./Recursos/Musica/Bling.mp3">
+        <option value="./Recursos/Musica/Bloom.mp3">
+        <option value="./Recursos/Musica/Sasageyo.mp3">
+        <option value="./Recursos/Musica/SNA.mp3">
+        <option value="./Recursos/Musica/Poison.mp3">
+        <option value="./Recursos/Musica/AoNoCumbia.mp3"></option>
+    </datalist>
+
+
+    <script>
+         var SonidoBoton = document.getElementById("boton");
+         var CancionBoton1 = document.getElementById("boton1"); 
+         var CancionBoton2 = document.getElementById("boton2"); 
+         var CancionBoton3 = document.getElementById("boton3");
+         
+        //localStorage.removeItem("camino");
+        //localStorage.removeItem("comparadorCubos");
+
+        // Función que se ejecutará cuando se haga clic en la imagen
+        function playClick1() {
+            SonidoBoton.play();
+            SonidoBoton.onended = function() {
+                var camino = './Recursos/Musica/Flynn.mp3';
+                var comparadorCubos = 100;
+                localStorage.setItem("camino", camino);
+                localStorage.setItem("comparadorCubos", comparadorCubos);
+                window.location.href = "Juego.html";
+            };
+        }
+
+        function playClick2() {
+            SonidoBoton.play();
+            SonidoBoton.onended = function() {
+                var camino = './Recursos/Musica/GOGOPR.mp3';
+                var comparadorCubos = 127;
+                localStorage.setItem("camino", camino);
+                localStorage.setItem("comparadorCubos", comparadorCubos);
+                window.location.href = "Juego.html";
+            };
+        }
+
+        function playClick3() {
+            SonidoBoton.play();
+            SonidoBoton.onended = function() {
+                var camino = './Recursos/Musica/SPECIALZ.mp3';
+                var comparadorCubos = 50;
+                localStorage.setItem("camino", camino);
+                localStorage.setItem("comparadorCubos", comparadorCubos);
+                console.log(camino);
+                window.location.href = "Juego.html";
+            };
+        }
+
+        function playClick4() {
+            SonidoBoton.play();
+            SonidoBoton.onended = function() {
+                var numero = parseInt(document.getElementById('numeroInput').value);
+                var texto = document.getElementById('textoInput').value;
+                if (numero >= 0 && numero <= 255) {
+                    localStorage.setItem("comparadorCubos", numero);
+                    localStorage.setItem("camino", texto);
+                    window.location.href = "Juego.html";
+                } else {
+                    alert("Por favor, ingrese un número válido entre 0 y 255.");
+                }
+            }
+        }
+
+        function salirClick() {
+            SonidoBoton.play();
+            SonidoBoton.onended = function() {
+                window.location.href = "index.html";
+            };
+        }
+
+        // Obtén la referencia a las imágenes
+        const playButton1 = document.getElementById('Button1');
+        const playButton2 = document.getElementById('Button2');
+        const playButton3 = document.getElementById('Button3');
+        const playButton4 = document.getElementById('Button4');
+        const SalirButton = document.getElementById('SalirButton');
+
+        // Agrega eventos de clic a las imágenes
+        playButton1.addEventListener('click', playClick1);
+        playButton2.addEventListener('click', playClick2);
+        playButton3.addEventListener('click', playClick3);
+        playButton4.addEventListener('click', playClick4);
+        SalirButton.addEventListener('click', salirClick);
+
+        // Reproducir sonido cuando se pasa el mouse sobre el botón
+        function playSoundOnHover1() {
+            CancionBoton1.play();
+        }
+        function stopSoundOnLeave1() {
+            CancionBoton1.pause();
+            CancionBoton1.currentTime = 0;
+        }
+        playButton1.addEventListener('mouseenter', playSoundOnHover1);
+        playButton1.addEventListener('mouseleave', stopSoundOnLeave1);
+
+        function playSoundOnHover2() {
+            CancionBoton2.play();
+        }
+        function stopSoundOnLeave2() {
+            CancionBoton2.pause();
+            CancionBoton2.currentTime = 0;
+        }
+        playButton2.addEventListener('mouseenter', playSoundOnHover2);
+        playButton2.addEventListener('mouseleave', stopSoundOnLeave2);
+
+        function playSoundOnHover3() {
+            CancionBoton3.play();
+        }
+        function stopSoundOnLeave3() {
+            CancionBoton3.pause();
+            CancionBoton3.currentTime = 0;
+        }
+        playButton3.addEventListener('mouseenter', playSoundOnHover3);
+        playButton3.addEventListener('mouseleave', stopSoundOnLeave3);
+
+
+    </script>
+
+</body>
+</html>
+

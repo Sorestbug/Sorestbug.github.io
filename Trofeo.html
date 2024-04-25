@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <title>Trofeo</title>
+        <!-- include three.js library -->
+	    <script src='JS/three.js'></script>
+	    <!-- include jsartookit -->
+	    <script src="JS/jsartoolkit5/artoolkit.min.js"></script>
+	    <script src="JS/jsartoolkit5/artoolkit.api.js"></script>
+	    <!-- include threex.artoolkit -->
+	    <script src="JS/threex/threex-artoolkitsource.js"></script>
+	    <script src="JS/threex/threex-artoolkitcontext.js"></script>
+	    <script src="JS/threex/threex-arbasecontrols.js"></script>
+	    <script src="JS/threex/threex-armarkercontrols.js"></script>
+        <script>
+        </script>
+    </head>
+    
+    <body>
+
+         <!-- Reproductor de música -->
+    <audio id="reproductor"  autoplay loop>
+        <source src="Recursos/Musica/Trofeo.mp3" type="audio/mpeg">
+        Tu navegador no soporta la reproducción de audio.
+    </audio>
+
+        <script type="module">
+            import * as THREE from './JS/three.module.js';
+            import { GLTFLoader } from './JS/GLTFLoader.js';
+            import { GUI } from './JS/lil-gui.module.min.js';
+            import { FontLoader } from './JS/FontLoader.js';
+	        import { TextGeometry } from './JS/TextGeometry.js';
+
+            var arToolkitSource, arToolkitContext; 
+            var markerRoot1;
+            var mesh1;
+            
+        //Crear scene/Definir Fondo
+        var scene = new THREE.Scene(); //Crear scene
+        let ambientLight = new THREE.AmbientLight( 0xcccccc, 1.0 );
+	    scene.add( ambientLight );
+
+        //Crear camara
+        var Camara = new THREE.Camera();
+        scene.add(Camara);
+       
+        //Crear Render
+        var Render = new THREE.WebGLRenderer();
+        Render.setClearColor(new THREE.Color('lightgrey'), 0)
+        Render.setSize( 640, 480 );
+        Render.domElement.style.position = 'absolute'
+        Render.domElement.style.top = '0px'
+        Render.domElement.style.left = '0px'
+	    document.body.appendChild(  Render.domElement );
+
+	    //ARToolkitSource
+	    arToolkitSource = new THREEx.ArToolkitSource({
+    		sourceType : 'webcam',
+    	});
+
+	    function onResize(){
+    		arToolkitSource.onResize()	
+		    arToolkitSource.copySizeTo(Render.domElement)	
+		    if ( arToolkitContext.arController !== null ){
+    			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		    }	
+	    }
+
+	    arToolkitSource.init(function onReady(){
+		    onResize()
+	    });
+	
+	    window.addEventListener('resize', function(){
+		    onResize()
+	    });
+
+	    //ARToolkitContext
+	    arToolkitContext = new THREEx.ArToolkitContext({
+		    cameraParametersUrl: 'JS/data/camera_para.dat',
+		    detectionMode: 'mono'
+	    });
+	
+	    //Matriz de Proyeccion
+	    arToolkitContext.init( function onCompleted(){
+		    Camara.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+	    });
+
+        //Variables Importantes
+        var NumeroVidas = localStorage.getItem("NumeroVidas");
+        var numeroColisionesEsferas = localStorage.getItem("numeroColisionesEsferas");
+        //console.log(NumeroVidas);
+        //console.log(numeroColisionesEsferas);
+
+        var puntajeFinal = NumeroVidas*numeroColisionesEsferas;
+        //console.log(puntajeFinal);
+
+        var colores =0xffffff;
+        var Titulo = "Puntaje: \n      "+puntajeFinal;
+
+
+        //Botones
+	    const gui = new GUI();
+        const audioControls = {
+            Salir: function() {
+                window.location.href = "index.html";
+            }
+        };
+        gui.add(audioControls, 'Salir');
+
+
+        
+
+      //Codigo Centro
+      var centro = new THREE.Mesh( new THREE.BoxGeometry(.001,.001,.001),
+            new THREE.MeshBasicMaterial({color: colores}));
+        centro.position.x = 0; //-58/58
+        centro.position.y = 0; //1
+        centro.position.z = 0; //4/-25
+        scene.add(centro);
+
+        //Codigo Cita
+        var Cita;
+        const loader1 = new FontLoader();
+        loader1.load( './Recursos/Modelos/GothamBlack.json', function ( GothamBlack ) {//Cargamos la Fuente
+
+            const Tgeo = new TextGeometry( Titulo, {//Variables Texto
+            font: GothamBlack,
+		    size: .1,
+		    height: .1,
+		    curveSegments: .1,
+		    bevelEnabled: true,
+		    bevelThickness: 0,
+		    bevelSize: 0,
+		    bevelOffset: 0,
+		    bevelSegments: 1
+            });
+
+            Cita= new THREE.Mesh(Tgeo,[//Tipo de Material de las letras
+            new THREE.MeshBasicMaterial({color: colores}),//Color enfrente
+            new THREE.MeshBasicMaterial({color: 0x000000})//Color Lateral   
+                ]);
+
+            aux.add(Cita);
+            Cita.position.set(-.35,0,-.5);
+            Cita.rotation.x= -Math.PI/2;
+            Cita.castShadow= true;
+            Cita.reciveShadow= true;
+            });
+
+        //Codigo Aux
+        var aux = new THREE.Mesh( new THREE.BoxGeometry(.001,.001,.001),
+        new THREE.MeshBasicMaterial({color: colores}));
+        aux.position.x = 0; //-58/58
+        aux.position.y = 0; //1
+        aux.position.z = 0; //4/-25
+        centro.add(aux);
+        const luzaux1 = new THREE.PointLight( 0xffffff, 10, 10 );
+        luzaux1.position.set( 4, 4, 3 );
+        aux.add( luzaux1 );
+
+        //BOX
+        let loadedModel;
+        const glftLoader = new GLTFLoader();
+        glftLoader.load('./Recursos/Modelos/Trofeo.glb', (BOX) => {
+        loadedModel = BOX;
+        BOX.scene.rotation.x = -Math.PI/2;
+        //BOX.scene.rotation.y = Math.PI/2;
+        //BOX.scene.rotation.z = -Math.PI/2;
+        BOX.scene.position.set(0,0,.5);
+        BOX.scene.scale.set(.3, .3, .3);
+        centro.add(BOX.scene);
+        });
+
+        //markerControls
+	    markerRoot1 = new THREE.Group();
+	    scene.add(markerRoot1);
+	    let markerControls1 = new THREEx.ArMarkerControls(arToolkitContext, markerRoot1, {
+		    type: 'pattern', patternUrl: "JS/data/hiro.patt",
+	    })
+        markerRoot1.add(centro);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            alert('Para poder ver el Trofeo en Realidad Aumentada se necesita un marcador HIRO');
+        });
+       
+        function Animacion(){//Animacion
+
+            //Controlador Titulo
+            
+          
+            requestAnimationFrame(Animacion);//Creamos el Frame
+
+            if (loadedModel) {
+               loadedModel.scene.rotation.y += 0.025; 
+            }
+
+            //Controlador AR
+	        if ( arToolkitSource.ready !== false )
+		        arToolkitContext.update( arToolkitSource.domElement );
+
+            Render.render(scene,Camara);//Se crea Render
+        }
+        Animacion();
+        
+        </script>
+	</body>
+</html>

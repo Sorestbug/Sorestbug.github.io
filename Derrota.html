@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Derrota</title>
+    <style>
+        body {
+            /* Establecer imagen de fondo */
+            background-image: url('Recursos/Imagenes/FondoV7.jpg');
+            background-size: cover;
+            background-repeat: no-repeat; 
+            /*background-position: center;*/
+            color: white;
+            position: absolute;
+        }
+
+        #Derrota {
+            position: absolute; 
+            top: -50px; 
+            left: -700px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.4);
+        }
+
+        #ReintentarButton {
+            position: absolute; 
+            top: 10px; 
+            left: 40px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.35);
+        }
+        #ReintentarButton:hover {
+            transform: scale(.4); 
+        }
+
+        #SeleccionButton {
+            position: absolute; 
+            top: 170px; 
+            left: 40px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.35);
+        }
+        #SeleccionButton:hover {
+            transform: scale(.4); 
+        }
+
+        #SalirButton {
+            position: absolute; 
+            top: 330px; 
+            left: 40px; 
+            cursor: pointer; 
+            transition: transform 0.3s;
+            transform: scale(.35);
+        }
+        #SalirButton:hover {
+            transform: scale(.4); 
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Reproductor de música -->
+    <audio id="reproductor"  autoplay loop>
+        <source src="Recursos/Musica/Continuar.mp3" type="audio/mpeg">
+        Tu navegador no soporta la reproducción de audio.
+    </audio>
+
+    <audio id="boton1" src="Recursos/Musica/Boton1.wav" preload="auto"></audio>
+
+    <!--PNGs -->
+    <img id="Derrota" src="Recursos/Imagenes/Derrota.png" alt="Derrota">
+    <img id="ReintentarButton" src="Recursos/Imagenes/Reintentar.png" alt="Reintentar">
+    <img id="SeleccionButton" src="Recursos/Imagenes/Seleccion.png" alt="Seleccion">
+    <img id="SalirButton" src="Recursos/Imagenes/Salir.png" alt="Salir">
+
+
+    <script>
+
+         var SonidoBoton1 = document.getElementById("boton1"); 
+
+        // Función que se ejecutará cuando se haga clic en la imagen
+        function reintentarClick() {
+            SonidoBoton1.play();
+            SonidoBoton1.onended = function() {
+                window.location.href = "Juego.html";
+            };
+        }
+
+        function seleccionClick() {
+            SonidoBoton1.play();
+            SonidoBoton1.onended = function() {
+                window.location.href = "SeleccionNiveles.html";
+            };
+        }
+
+        function salirClick() {
+            SonidoBoton1.play();
+            SonidoBoton1.onended = function() {
+                window.location.href = "index.html";
+            };
+        }
+ 
+        // Obtén la referencia a las imágenes
+        const ReintentarButton = document.getElementById('ReintentarButton');
+        const SeleccionButton = document.getElementById('SeleccionButton');
+        const SalirButton = document.getElementById('SalirButton');
+
+        // Agrega eventos de clic a las imágenes
+        ReintentarButton.addEventListener('click', reintentarClick);
+        SeleccionButton.addEventListener('click', seleccionClick);
+        SalirButton.addEventListener('click', salirClick);
+
+
+
+    </script>
+
+</body>
+</html>
+
